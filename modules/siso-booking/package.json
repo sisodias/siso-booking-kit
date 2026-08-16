@@ -1,0 +1,31 @@
+{
+  "name": "@siso/booking-module",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "description": "Reusable SISO booking contract, slot engine, and Cloudflare Pages handler.",
+  "scripts": {
+    "test": "node tests/module-contract.mjs"
+  },
+  "exports": {
+    "./core": "./server/booking-core.js",
+    "./server": "./server/booking-handler.js",
+    "./react/client": "./react/booking-client.js",
+    "./react/BookingCalendar": "./react/BookingCalendar.jsx",
+    "./react/BookingAdmin": "./react/BookingAdmin.jsx",
+    "./schema.sql": "./server/schema.sql",
+    "./module-manifest.json": "./module-manifest.json"
+  },
+  "files": [
+    "react",
+    "server",
+    "module-manifest.json",
+    "upstream-manifest.json",
+    "README.md",
+    "package.json"
+  ],
+  "peerDependencies": {
+    "react": ">=18",
+    "react-dom": ">=18"
+  }
+}

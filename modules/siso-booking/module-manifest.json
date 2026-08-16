@@ -1,0 +1,83 @@
+{
+  "schemaVersion": "1.0",
+  "moduleId": "booking",
+  "manifestVersion": "0.2.0",
+  "display": {
+    "label": "Booking",
+    "description": "A host-configured appointment calendar with conflict-safe reservations and optional deposits.",
+    "icon": "calendar-days"
+  },
+  "mode": "native-adapter",
+  "lifecycle": "target-module",
+  "experience": "native-shell",
+  "routes": [
+    {
+      "routeId": "booking-api",
+      "path": "/api/booking/*",
+      "slot": "module.sidecar",
+      "requiredCapabilities": [
+        "siso:booking:availability:read",
+        "siso:booking:reservation:create"
+      ]
+    }
+  ],
+  "capabilities": [
+    "siso:booking:catalog:read",
+    "siso:booking:availability:read",
+    "siso:booking:reservation:create",
+    "siso:booking:reservation:manage",
+    "siso:booking:availability:manage"
+  ],
+  "identity": {
+    "protocol": "host-public-edge",
+    "audience": "siso-module:booking",
+    "tokenClaims": [],
+    "allowedOrigins": []
+  },
+  "authorities": [
+    {
+      "authorityId": "booking-config",
+      "system": "host-config",
+      "entities": ["service-catalog", "availability-rules", "booking-policy"],
+      "recordClass": "configuration",
+      "writePolicy": "host-controlled"
+    },
+    {
+      "authorityId": "booking-database",
+      "system": "cloudflare-d1",
+      "entities": ["bookings", "booking-webhook-events", "availability-overrides"],
+      "recordClass": "transactional-pii",
+      "writePolicy": "server-only"
+    }
+  ],
+  "integration": {
+    "commands": [
+      "booking.availability.read.v1",
+      "booking.reservation.create.v1",
+      "booking.reservation.cancel.v1",
+      "booking.availability.override.v1"
+    ],
+    "emits": ["booking.reservation.created.v1", "booking.reservation.cancelled.v1"],
+    "consumes": ["payment.checkout.completed.v1", "payment.checkout.expired.v1"],
+    "readModels": ["booking.catalog.v1", "booking.availability.v1"],
+    "configReferenceKinds": [
+      "provider.secret.v1",
+      "booking.catalog.v1",
+      "booking.availability.v1",
+      "branding.tokens.v1"
+    ]
+  },
+  "health": {
+    "endpoint": "/api/booking/health",
+    "maxReceiptAgeSeconds": 3600,
+    "requiredDependencyProbes": ["database.runtime.v1", "payment.runtime.v1"]
+  },
+  "release": {
+    "receiptSchema": "release-receipt.v1",
+    "minimumCoreVersion": "1.0.0"
+  },
+  "repository": {
+    "source": "internal:melanotresses-site/modules/siso-booking",
+    "owner": "siso-platform"
+  }
+}

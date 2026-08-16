@@ -1,0 +1,22 @@
+{
+  "upstream": {
+    "repository": "https://github.com/zainalshanan/thebookingkit",
+    "fork": "https://github.com/sisodias/siso-booking-kit",
+    "commit": "634d6797d3c20b70edc9ed53d5866d4614972c1d",
+    "license": "MIT",
+    "reviewedAt": "2026-08-17"
+  },
+  "adoptedPatterns": [
+    "Timezone-aware slot computation as a pure host-independent concern",
+    "D1 atomic overlap-guarded insert for the final booking write",
+    "Provider-owned service catalog and availability rules",
+    "Payment and notification adapters kept outside the slot engine"
+  ],
+  "localDelta": [
+    "Plain JavaScript and Cloudflare Pages Functions to match the SISO client baseline",
+    "A small D1 schema for one host before multi-tenant expansion",
+    "Stripe Checkout deposit flow and Resend notifications are host bindings",
+    "D1-backed operator overrides and a token-gated React admin surface",
+    "Acuity remains the explicit fallback until the host passes the readiness probe"
+  ]
+}

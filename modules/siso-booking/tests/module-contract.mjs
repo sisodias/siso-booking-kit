@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { computeAvailableSlots, localDateTimeToUtc, normaliseAvailabilityOverride, validateReservationInput } from '../server/booking-core.js'
-import { createBookingHandler, reservationInsertSql } from '../server/booking-handler.js'
+import { calendarForBooking, createBookingHandler, reservationInsertSql } from '../server/booking-handler.js'
 
 const config = {
   providerId: 'test-studio',
@@ -68,6 +68,23 @@ assert.deepEqual(normaliseAvailabilityOverride({ date: monday, start: '10:00', e
   note: '',
 })
 assert.throws(() => normaliseAvailabilityOverride({ date: monday, start: '14:00', end: '10:00' }))
+
+const calendar = calendarForBooking({
+  config: { ...config, providerName: 'Test Studio', location: '1 Example Street; Newcastle' },
+  service: config.services[0],
+  booking: {
+    id: 'booking-123',
+    status: 'confirmed',
+    startsAt: start.toISOString(),
+    endsAt: end.toISOString(),
+    createdAt: '2026-08-20T12:00:00.000Z',
+  },
+})
+assert.match(calendar, /BEGIN:VCALENDAR\r\n/)
+assert.match(calendar, /DTSTART:20260824T080000Z\r\n/)
+assert.match(calendar, /DTEND:20260824T090000Z\r\n/)
+assert.match(calendar, /LOCATION:1 Example Street\\; Newcastle\r\n/)
+assert.match(calendar, /STATUS:CONFIRMED\r\n/)
 
 const handler = createBookingHandler(config)
 const health = await handler({

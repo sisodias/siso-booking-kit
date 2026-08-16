@@ -86,6 +86,7 @@ export function BookingCalendar({
   const [state, setState] = useState('idle')
   const [error, setError] = useState('')
   const [checkoutUrl, setCheckoutUrl] = useState('')
+  const [calendarUrl, setCalendarUrl] = useState('')
 
   useEffect(() => {
     if (!service?.bookingId) return
@@ -157,6 +158,7 @@ export function BookingCalendar({
       return
     }
     setState('booking')
+    setCalendarUrl('')
     if (demo) {
       await new Promise((resolve) => setTimeout(resolve, 500))
       setState('booked')
@@ -176,6 +178,7 @@ export function BookingCalendar({
         setCheckoutUrl(body.checkoutUrl)
         setState('payment')
       } else {
+        setCalendarUrl(body.calendarUrl || '')
         setState('booked')
       }
     } catch (cause) {
@@ -202,6 +205,7 @@ export function BookingCalendar({
           {service.name} — {formatDate(localDateString(new Date(slot.start)), timezone)}, {slotTime(slot, timezone)}.
           {!demo && ' A confirmation email will follow if email delivery is configured.'}
         </p>
+        {calendarUrl && <a href={calendarUrl} download className="btn-ghost">Add to calendar</a>}
         {whatsappHref && <a href={whatsappHref} target="_blank" rel="noreferrer" className="btn-ghost">Message us on WhatsApp</a>}
       </div>
     )

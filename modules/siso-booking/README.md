@@ -4,6 +4,8 @@ This is the reusable SISO booking boundary selected from the MIT-licensed
 [`zainalshanan/thebookingkit`](https://github.com/zainalshanan/thebookingkit)
 project and maintained in the SISO fork
 [`sisodias/siso-booking-kit`](https://github.com/sisodias/siso-booking-kit).
+The distributable SISO module is on the [`siso-module` branch](https://github.com/sisodias/siso-booking-kit/tree/siso-module)
+at the recorded ref in `upstream-manifest.json`.
 The module keeps the host's service catalogue, availability rules, payment
 policy, logo, and contact details outside the shared code.
 
@@ -17,6 +19,7 @@ policy, logo, and contact details outside the shared code.
 - A D1 schema whose final reservation write is one atomic overlap-guarded
   `INSERT ... SELECT ... WHERE NOT EXISTS` statement.
 - Optional Stripe Checkout deposits and Resend confirmation/cancellation mail.
+- Private `.ics` calendar exports for confirmed or pending appointments, protected by the booking management token.
 - A D1-backed operator calendar: close a date, replace its hours, or cancel an
   upcoming booking without exposing database credentials to the browser.
 - Honest readiness health: a host with missing D1 or required payment secrets

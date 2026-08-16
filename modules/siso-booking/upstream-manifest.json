@@ -2,6 +2,8 @@
   "upstream": {
     "repository": "https://github.com/zainalshanan/thebookingkit",
     "fork": "https://github.com/sisodias/siso-booking-kit",
+    "forkRef": "siso-module",
+    "forkCommit": "0f5d51043f68c329729895808efdae717f0ac046",
     "commit": "634d6797d3c20b70edc9ed53d5866d4614972c1d",
     "license": "MIT",
     "reviewedAt": "2026-08-17"

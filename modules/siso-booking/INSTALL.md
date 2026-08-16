@@ -5,6 +5,10 @@ module owns slot math, reservation correctness, payment transitions, and the
 operator API. The host owns the service catalogue, brand UI, timezone, contact
 details, and the fallback policy.
 
+The maintained fork is [`sisodias/siso-booking-kit`](https://github.com/sisodias/siso-booking-kit),
+branch [`siso-module`](https://github.com/sisodias/siso-booking-kit/tree/siso-module). A host can
+vendor `modules/siso-booking` from that ref or copy the module into its own repository.
+
 ## 1. Add the host adapter
 
 Create a host config and a Pages Function wrapper:
@@ -79,6 +83,11 @@ The public host should switch from its existing provider only when health report
 environments. Run a Stripe test payment, a webhook completion, an email check, a
 conflict check, a cancellation check, and an operator closed-date check before
 removing the existing fallback.
+
+Manual or confirmed reservation responses include a private `calendarUrl`. The
+host UI can render it as an `Add to calendar` download; the endpoint returns a
+token-protected iCalendar file without exposing customer details. Payment flows
+should show the link after the webhook changes the booking to confirmed.
 
 ## Host release checklist
 

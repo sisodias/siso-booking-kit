@@ -4,6 +4,11 @@
   "private": true,
   "type": "module",
   "description": "Reusable SISO booking contract, slot engine, and Cloudflare Pages handler.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sisodias/siso-booking-kit.git",
+    "directory": "modules/siso-booking"
+  },
   "scripts": {
     "test": "node tests/module-contract.mjs"
   },

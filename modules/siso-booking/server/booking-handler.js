@@ -122,6 +122,51 @@ function publicBooking(booking, extras = {}) {
   }
 }
 
+function icsEscape(value) {
+  return String(value || '')
+    .replace(/\\/g, '\\\\')
+    .replace(/\r?\n/g, '\\n')
+    .replace(/([;,])/g, '\\$1')
+}
+
+function icsTimestamp(value) {
+  return new Date(value).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z')
+}
+
+export function calendarForBooking({ config, service, booking }) {
+  const status = booking.status === 'confirmed' ? 'CONFIRMED' : booking.status === 'cancelled' ? 'CANCELLED' : 'TENTATIVE'
+  const summary = `${service.name} — ${config.providerName || config.providerId}`
+  const description = `Booking reference: ${booking.id}`
+  const location = config.location || ''
+  return [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//SISO//Booking Module//EN',
+    'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH',
+    `X-WR-CALNAME:${icsEscape(config.providerName || config.providerId)}`,
+    'BEGIN:VEVENT',
+    `UID:${icsEscape(`${booking.id}@${config.providerId}`)}`,
+    `DTSTAMP:${icsTimestamp(booking.createdAt || new Date().toISOString())}`,
+    `DTSTART:${icsTimestamp(booking.startsAt)}`,
+    `DTEND:${icsTimestamp(booking.endsAt)}`,
+    `SUMMARY:${icsEscape(summary)}`,
+    `DESCRIPTION:${icsEscape(description)}`,
+    ...(location ? [`LOCATION:${icsEscape(location)}`] : []),
+    `STATUS:${status}`,
+    'END:VEVENT',
+    'END:VCALENDAR',
+    '',
+  ].join('\r\n')
+}
+
+function calendarUrlFor(request, bookingId, manageToken) {
+  const url = new URL('/api/booking/calendar', request.url)
+  url.searchParams.set('bookingId', bookingId)
+  url.searchParams.set('manageToken', manageToken)
+  return url.toString()
+}
+
 function dateRange(localDate, timezone) {
   const nextDate = addLocalDays(localDate, 1)
   const start = localDateTimeToUtc(localDate, '00:00', timezone)
@@ -499,7 +544,12 @@ async function reservationResponse({ request, config, env }) {
   }
 
   const emailSent = await sendEmail({ env, config, service: data.service, booking, kind: 'confirmation' }).catch(() => false)
-  return json(publicBooking(booking, { status: status === 'pending' ? 'requested' : 'confirmed', manageToken, emailSent }), 201)
+  return json(publicBooking(booking, {
+    status: status === 'pending' ? 'requested' : 'confirmed',
+    manageToken,
+    calendarUrl: calendarUrlFor(request, bookingId, manageToken),
+    emailSent,
+  }), 201)
 }
 
 async function verifyStripeSignature(signature, rawBody, secret, toleranceSeconds = 300) {
@@ -580,6 +630,32 @@ async function cancelResponse({ request, config, env }) {
   const service = serviceById(config.services, booking.serviceId)
   if (service) await sendEmail({ env, config, service, booking, kind: 'cancellation' }).catch(() => false)
   return json({ ok: true, bookingId, status: 'cancelled' })
+}
+
+async function calendarResponse({ request, config, env }) {
+  const db = dbFor(env)
+  if (!isDb(db)) return json({ configured: false, error: 'Booking database is not configured' }, 503)
+  const url = new URL(request.url)
+  const bookingId = safeText(url.searchParams.get('bookingId'), 80)
+  const manageToken = safeText(url.searchParams.get('manageToken'), 160)
+  if (!bookingId || !manageToken) return json({ error: 'Booking reference and management token are required' }, 400)
+  const row = await queryFirst(db, 'SELECT * FROM booking_bookings WHERE id = ? AND provider_id = ?', bookingId, config.providerId)
+  const hash = await sha256Hex(manageToken)
+  if (!row || !constantTimeEqual(hash, row.manage_token_hash)) return json({ error: 'Booking not found' }, 404)
+  if (!['pending', 'awaiting_payment', 'confirmed'].includes(row.status)) return json({ error: 'That booking is no longer active' }, 409)
+  const booking = rowToBooking(row)
+  const service = serviceById(config.services, booking.serviceId)
+  if (!service) return json({ error: 'Booking service is no longer available' }, 404)
+  const filename = `${service.name}-${booking.id}`.replace(/[^A-Za-z0-9._-]+/g, '-').replace(/^-+|-+$/g, '') || 'appointment'
+  return new Response(calendarForBooking({ config, service, booking }), {
+    status: 200,
+    headers: {
+      'content-type': 'text/calendar; charset=utf-8',
+      'content-disposition': `attachment; filename="${filename}.ics"`,
+      'cache-control': 'no-store',
+      'referrer-policy': 'no-referrer',
+    },
+  })
 }
 
 function adminAuthorised(request, env) {
@@ -757,6 +833,12 @@ export function createBookingHandler(inputConfig = {}) {
       try { return await reservationResponse({ request, config, env }) } catch (error) {
         console.error('Booking reservation failed:', error.message)
         return json({ error: 'Booking is temporarily unavailable' }, 503)
+      }
+    }
+    if (path === 'calendar' && request.method === 'GET') {
+      try { return await calendarResponse({ request, config, env }) } catch (error) {
+        console.error('Booking calendar export failed:', error.message)
+        return json({ error: 'Calendar export is temporarily unavailable' }, 503)
       }
     }
     if (path === 'cancel' && request.method === 'POST') {
